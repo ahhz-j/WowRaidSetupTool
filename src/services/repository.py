@@ -3,7 +3,7 @@ from __future__ import annotations
 import sqlite3
 
 from src.domain.enums import CharacterClass, Role, ShiftStatus
-from src.domain.models import Assignment, Character, Event, EventShift, Person, Template
+from src.domain.models import Assignment, Character, Event, EventShift, Person, Signup, Template
 from src.utils.paths import DB_PATH
 
 
@@ -87,6 +87,24 @@ class Repository:
                 "SELECT id, person_id, name, character_class, roles_csv, is_active, note "
                 "FROM characters WHERE person_id = ? ORDER BY id",
                 (person_id,),
+            ).fetchall()
+        return [
+            Character(
+                id=row["id"],
+                person_id=row["person_id"],
+                name=row["name"],
+                character_class=CharacterClass(row["character_class"]),
+                roles=self._deserialize_roles(row["roles_csv"]),
+                is_active=bool(row["is_active"]),
+                note=row["note"] or "",
+            )
+            for row in rows
+        ]
+
+    def list_all_characters(self) -> list[Character]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT id, person_id, name, character_class, roles_csv, is_active, note FROM characters ORDER BY person_id, id"
             ).fetchall()
         return [
             Character(
@@ -301,6 +319,50 @@ class Repository:
             connection.execute("DELETE FROM event_shifts WHERE id = ?", (shift_id,))
             connection.commit()
 
+    def list_signups_by_shift(self, shift_id: int) -> list[Signup]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT id, shift_id, person_id, character_id, role, status, source, note FROM signups "
+                "WHERE shift_id = ? ORDER BY created_at, id",
+                (shift_id,),
+            ).fetchall()
+        return [
+            Signup(
+                id=row["id"],
+                shift_id=row["shift_id"],
+                person_id=row["person_id"],
+                character_id=row["character_id"],
+                role=Role(row["role"]),
+                status=row["status"],
+                source=row["source"],
+                note=row["note"] or "",
+            )
+            for row in rows
+        ]
+
+    def add_signup(self, signup: Signup) -> int:
+        with self.connect() as connection:
+            cursor = connection.execute(
+                "INSERT INTO signups(shift_id, person_id, character_id, role, status, source, note) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    signup.shift_id,
+                    signup.person_id,
+                    signup.character_id,
+                    signup.role.value,
+                    signup.status,
+                    signup.source,
+                    signup.note,
+                ),
+            )
+            connection.commit()
+            return int(cursor.lastrowid)
+
+    def delete_signup(self, signup_id: int) -> None:
+        with self.connect() as connection:
+            connection.execute("DELETE FROM signups WHERE id = ?", (signup_id,))
+            connection.commit()
+
     def list_assignments_by_shift(self, shift_id: int) -> list[Assignment]:
         with self.connect() as connection:
             rows = connection.execute(
@@ -339,4 +401,35 @@ class Repository:
                         index,
                     ),
                 )
+            connection.commit()
+
+    def save_assignment(self, assignment: Assignment) -> int:
+        with self.connect() as connection:
+            cursor = connection.execute(
+                "INSERT INTO assignments(shift_id, person_id, character_id, role, is_locked, source, position_index) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    assignment.shift_id,
+                    assignment.person_id,
+                    assignment.character_id,
+                    assignment.role.value,
+                    int(assignment.is_locked),
+                    assignment.source,
+                    assignment.position_index,
+                ),
+            )
+            connection.commit()
+            return int(cursor.lastrowid)
+
+    def delete_assignment(self, assignment_id: int) -> None:
+        with self.connect() as connection:
+            connection.execute("DELETE FROM assignments WHERE id = ?", (assignment_id,))
+            connection.commit()
+
+    def update_assignment_lock(self, assignment_id: int, is_locked: bool) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                "UPDATE assignments SET is_locked = ? WHERE id = ?",
+                (int(is_locked), assignment_id),
+            )
             connection.commit()

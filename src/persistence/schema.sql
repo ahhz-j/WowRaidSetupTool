@@ -47,6 +47,21 @@ CREATE TABLE IF NOT EXISTS event_shifts (
     FOREIGN KEY (template_id) REFERENCES templates(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS signups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shift_id INTEGER NOT NULL,
+    person_id INTEGER NOT NULL,
+    character_id INTEGER NOT NULL,
+    role TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'signed',
+    source TEXT NOT NULL DEFAULT 'manual',
+    note TEXT DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (shift_id) REFERENCES event_shifts(id) ON DELETE CASCADE,
+    FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS assignments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     shift_id INTEGER NOT NULL,

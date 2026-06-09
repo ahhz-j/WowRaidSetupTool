@@ -56,6 +56,18 @@ class EventShift:
 
 
 @dataclass(slots=True)
+class Signup:
+    id: int | None
+    shift_id: int
+    person_id: int
+    character_id: int
+    role: Role
+    status: str = "signed"
+    source: str = "manual"
+    note: str = ""
+
+
+@dataclass(slots=True)
 class Assignment:
     id: int | None
     shift_id: int
