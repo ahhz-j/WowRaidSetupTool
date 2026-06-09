@@ -3,7 +3,8 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS persons (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    note TEXT DEFAULT ''
+    note TEXT DEFAULT '',
+    default_available_days TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS characters (

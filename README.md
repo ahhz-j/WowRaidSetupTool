@@ -12,6 +12,8 @@ Windows 10 桌面版 WOW 团队活动排班工具。
 - 基础领域模型
 - Buff/Debuff 目录初版
 - 导入导出协议骨架
+- 自然人与角色管理界面初版
+- 自然人与角色数据库读写初版
 
 ## 本地运行
 
@@ -19,6 +21,15 @@ Windows 10 桌面版 WOW 团队活动排班工具。
 pip install -r requirements.txt
 python src/main.py
 ```
+
+## 当前已实现
+
+- 自然人新增、编辑、删除
+- 自然人默认可参加活动日设置（Fri/Sat/Sun/Mon）
+- 角色新增、编辑、删除
+- 角色职业设置
+- 角色职责设置（Tank / Healer / DPS）
+- 角色启用/停用状态
 
 ## 打包 EXE
 

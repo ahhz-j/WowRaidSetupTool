@@ -11,6 +11,7 @@ class Person:
     id: int | None
     name: str
     note: str = ""
+    default_available_days: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)
