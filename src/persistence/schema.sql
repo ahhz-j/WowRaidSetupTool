@@ -3,7 +3,8 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS persons (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    note TEXT DEFAULT ''
+    note TEXT DEFAULT '',
+    default_available_days TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS characters (
@@ -44,4 +45,35 @@ CREATE TABLE IF NOT EXISTS event_shifts (
     status TEXT NOT NULL,
     FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
     FOREIGN KEY (template_id) REFERENCES templates(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS signups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shift_id INTEGER NOT NULL,
+    person_id INTEGER NOT NULL,
+    character_id INTEGER NOT NULL,
+    role TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'signed',
+    source TEXT NOT NULL DEFAULT 'manual',
+    note TEXT DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (shift_id) REFERENCES event_shifts(id) ON DELETE CASCADE,
+    FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS assignments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shift_id INTEGER NOT NULL,
+    person_id INTEGER NOT NULL,
+    character_id INTEGER NOT NULL,
+    role TEXT NOT NULL,
+    is_locked INTEGER NOT NULL DEFAULT 0,
+    source TEXT NOT NULL DEFAULT 'auto',
+    position_index INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(shift_id, person_id),
+    UNIQUE(shift_id, character_id),
+    FOREIGN KEY (shift_id) REFERENCES event_shifts(id) ON DELETE CASCADE,
+    FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
 );

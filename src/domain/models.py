@@ -11,6 +11,7 @@ class Person:
     id: int | None
     name: str
     note: str = ""
+    default_available_days: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -52,3 +53,27 @@ class EventShift:
     end_time: str
     template_id: int | None
     status: ShiftStatus = ShiftStatus.DRAFT
+
+
+@dataclass(slots=True)
+class Signup:
+    id: int | None
+    shift_id: int
+    person_id: int
+    character_id: int
+    role: Role
+    status: str = "signed"
+    source: str = "manual"
+    note: str = ""
+
+
+@dataclass(slots=True)
+class Assignment:
+    id: int | None
+    shift_id: int
+    person_id: int
+    character_id: int
+    role: Role
+    is_locked: bool = False
+    source: str = "auto"
+    position_index: int = 0
