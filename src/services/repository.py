@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import sqlite3
-from dataclasses import dataclass
 
-from src.domain.enums import CharacterClass, Role
-from src.domain.models import Character, Person
+from src.domain.enums import CharacterClass, Role, ShiftStatus
+from src.domain.models import Character, Event, EventShift, Person, Template
 from src.utils.paths import DB_PATH
 
 
@@ -140,4 +139,147 @@ class Repository:
     def delete_character(self, character_id: int) -> None:
         with self.connect() as connection:
             connection.execute("DELETE FROM characters WHERE id = ?", (character_id,))
+            connection.commit()
+
+    def list_templates(self) -> list[Template]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT id, name, tank_count, healer_count, dps_count, note FROM templates ORDER BY id"
+            ).fetchall()
+        return [
+            Template(
+                id=row["id"],
+                name=row["name"],
+                tank_count=row["tank_count"],
+                healer_count=row["healer_count"],
+                dps_count=row["dps_count"],
+                note=row["note"] or "",
+            )
+            for row in rows
+        ]
+
+    def add_template(self, template: Template) -> int:
+        with self.connect() as connection:
+            cursor = connection.execute(
+                "INSERT INTO templates(name, tank_count, healer_count, dps_count, note) VALUES (?, ?, ?, ?, ?)",
+                (template.name, template.tank_count, template.healer_count, template.dps_count, template.note),
+            )
+            connection.commit()
+            return int(cursor.lastrowid)
+
+    def update_template(self, template: Template) -> None:
+        if template.id is None:
+            raise ValueError("template.id is required for update")
+        with self.connect() as connection:
+            connection.execute(
+                "UPDATE templates SET name = ?, tank_count = ?, healer_count = ?, dps_count = ?, note = ? WHERE id = ?",
+                (template.name, template.tank_count, template.healer_count, template.dps_count, template.note, template.id),
+            )
+            connection.commit()
+
+    def delete_template(self, template_id: int) -> None:
+        with self.connect() as connection:
+            connection.execute("DELETE FROM templates WHERE id = ?", (template_id,))
+            connection.commit()
+
+    def list_events(self) -> list[Event]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT id, title, description, archived FROM events ORDER BY id DESC"
+            ).fetchall()
+        return [
+            Event(
+                id=row["id"],
+                title=row["title"],
+                description=row["description"] or "",
+                archived=bool(row["archived"]),
+            )
+            for row in rows
+        ]
+
+    def add_event(self, event: Event) -> int:
+        with self.connect() as connection:
+            cursor = connection.execute(
+                "INSERT INTO events(title, description, archived) VALUES (?, ?, ?)",
+                (event.title, event.description, int(event.archived)),
+            )
+            connection.commit()
+            return int(cursor.lastrowid)
+
+    def update_event(self, event: Event) -> None:
+        if event.id is None:
+            raise ValueError("event.id is required for update")
+        with self.connect() as connection:
+            connection.execute(
+                "UPDATE events SET title = ?, description = ?, archived = ? WHERE id = ?",
+                (event.title, event.description, int(event.archived), event.id),
+            )
+            connection.commit()
+
+    def delete_event(self, event_id: int) -> None:
+        with self.connect() as connection:
+            connection.execute("DELETE FROM events WHERE id = ?", (event_id,))
+            connection.commit()
+
+    def list_shifts_by_event(self, event_id: int) -> list[EventShift]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT id, event_id, shift_date, weekday_label, start_time, end_time, template_id, status "
+                "FROM event_shifts WHERE event_id = ? ORDER BY shift_date, start_time, id",
+                (event_id,),
+            ).fetchall()
+        return [
+            EventShift(
+                id=row["id"],
+                event_id=row["event_id"],
+                shift_date=row["shift_date"],
+                weekday_label=row["weekday_label"],
+                start_time=row["start_time"],
+                end_time=row["end_time"],
+                template_id=row["template_id"],
+                status=ShiftStatus(row["status"]),
+            )
+            for row in rows
+        ]
+
+    def add_shift(self, shift: EventShift) -> int:
+        with self.connect() as connection:
+            cursor = connection.execute(
+                "INSERT INTO event_shifts(event_id, shift_date, weekday_label, start_time, end_time, template_id, status) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    shift.event_id,
+                    shift.shift_date,
+                    shift.weekday_label,
+                    shift.start_time,
+                    shift.end_time,
+                    shift.template_id,
+                    shift.status.value,
+                ),
+            )
+            connection.commit()
+            return int(cursor.lastrowid)
+
+    def update_shift(self, shift: EventShift) -> None:
+        if shift.id is None:
+            raise ValueError("shift.id is required for update")
+        with self.connect() as connection:
+            connection.execute(
+                "UPDATE event_shifts SET shift_date = ?, weekday_label = ?, start_time = ?, end_time = ?, template_id = ?, status = ? "
+                "WHERE id = ?",
+                (
+                    shift.shift_date,
+                    shift.weekday_label,
+                    shift.start_time,
+                    shift.end_time,
+                    shift.template_id,
+                    shift.status.value,
+                    shift.id,
+                ),
+            )
+            connection.commit()
+
+    def delete_shift(self, shift_id: int) -> None:
+        with self.connect() as connection:
+            connection.execute("DELETE FROM event_shifts WHERE id = ?", (shift_id,))
             connection.commit()
