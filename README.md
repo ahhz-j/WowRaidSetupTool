@@ -1,2 +1,2 @@
 # WowRaidSetupTool
-wow-raid-scheduler
+wow-raid-scheduler-tools
