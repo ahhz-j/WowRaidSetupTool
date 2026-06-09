@@ -3,7 +3,7 @@ from __future__ import annotations
 import sqlite3
 
 from src.domain.enums import CharacterClass, Role, ShiftStatus
-from src.domain.models import Character, Event, EventShift, Person, Template
+from src.domain.models import Assignment, Character, Event, EventShift, Person, Template
 from src.utils.paths import DB_PATH
 
 
@@ -158,6 +158,23 @@ class Repository:
             for row in rows
         ]
 
+    def get_template(self, template_id: int) -> Template | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT id, name, tank_count, healer_count, dps_count, note FROM templates WHERE id = ?",
+                (template_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return Template(
+            id=row["id"],
+            name=row["name"],
+            tank_count=row["tank_count"],
+            healer_count=row["healer_count"],
+            dps_count=row["dps_count"],
+            note=row["note"] or "",
+        )
+
     def add_template(self, template: Template) -> int:
         with self.connect() as connection:
             cursor = connection.execute(
@@ -282,4 +299,44 @@ class Repository:
     def delete_shift(self, shift_id: int) -> None:
         with self.connect() as connection:
             connection.execute("DELETE FROM event_shifts WHERE id = ?", (shift_id,))
+            connection.commit()
+
+    def list_assignments_by_shift(self, shift_id: int) -> list[Assignment]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT id, shift_id, person_id, character_id, role, is_locked, source, position_index "
+                "FROM assignments WHERE shift_id = ? ORDER BY position_index, id",
+                (shift_id,),
+            ).fetchall()
+        return [
+            Assignment(
+                id=row["id"],
+                shift_id=row["shift_id"],
+                person_id=row["person_id"],
+                character_id=row["character_id"],
+                role=Role(row["role"]),
+                is_locked=bool(row["is_locked"]),
+                source=row["source"],
+                position_index=row["position_index"],
+            )
+            for row in rows
+        ]
+
+    def replace_assignments(self, shift_id: int, assignments: list[Assignment]) -> None:
+        with self.connect() as connection:
+            connection.execute("DELETE FROM assignments WHERE shift_id = ?", (shift_id,))
+            for index, assignment in enumerate(assignments, start=1):
+                connection.execute(
+                    "INSERT INTO assignments(shift_id, person_id, character_id, role, is_locked, source, position_index) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        shift_id,
+                        assignment.person_id,
+                        assignment.character_id,
+                        assignment.role.value,
+                        int(assignment.is_locked),
+                        assignment.source,
+                        index,
+                    ),
+                )
             connection.commit()
